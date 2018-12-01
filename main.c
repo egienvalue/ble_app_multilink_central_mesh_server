@@ -90,8 +90,8 @@
 #define LEDBUTTON_BUTTON          BSP_BUTTON_0                          /**< Button that will write to the LED characteristic of the peer. */
 #define BUTTON_DETECTION_DELAY    APP_TIMER_TICKS(50)                   /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
 
-#define SCAN_INTERVAL             0x00A0*3                               /**< Determines scan interval in units of 0.625 millisecond. */
-#define SCAN_WINDOW               0x0050*1                                /**< Determines scan window in units of 0.625 millisecond. */
+#define SCAN_INTERVAL             0x00A0*2                               /**< Determines scan interval in units of 0.625 millisecond. */
+#define SCAN_WINDOW               0x0020*1                                /**< Determines scan window in units of 0.625 millisecond. */
 #define SCAN_DURATION             0x0000                               /**< Duration of the scanning in units of 10 milliseconds. If set to 0x0000, scanning will continue until it is explicitly disabled. */
 
 #define MIN_CONNECTION_INTERVAL   MSEC_TO_UNITS(7.5, UNIT_1_25_MS)      /**< Determines minimum connection interval in milliseconds. */
@@ -99,8 +99,8 @@
 #define SLAVE_LATENCY             0                                     /**< Determines slave latency in terms of connection events. */
 #define SUPERVISION_TIMEOUT       MSEC_TO_UNITS(4000, UNIT_10_MS)       /**< Determines supervision time-out in units of 10 milliseconds. */
 #define CHECK_NODE_INTERVAL         APP_TIMER_TICKS(60000)
-#define START_SCAN_INTERVAL         APP_TIMER_TICKS(1000)
-#define TIME_THRES                  APP_TIMER_TICKS(3000000)
+#define START_SCAN_INTERVAL         APP_TIMER_TICKS(3000)
+#define TIME_THRES                  APP_TIMER_TICKS(100000)
 
 
 NRF_BLE_GATT_DEF(m_gatt);                                               /**< GATT module instance. */
@@ -154,9 +154,9 @@ static bool match_function(nrf_sortlist_item_t * p_item, char * item, uint8_t cu
     if(memcmp(p_item_0->sensor_addr , item, BLE_GAP_ADDR_LEN)==0)
     {
         p_item_0->last_active_time = app_timer_cnt_get();
-        p_item_0->active = true;
-        //if((p_item_0->human_detec_status != curr_state)||(p_item_0->battery_level != battery_level))
-        //{
+        if((p_item_0->human_detec_status != curr_state)||(p_item_0->battery_level != battery_level)||(p_item_0->active == false))
+        {
+            p_item_0->active = true;
             p_item_0->publish_indicator = true;
             p_item_0->human_detec_status = curr_state;
             p_item_0->battery_level = battery_level;
@@ -170,7 +170,7 @@ static bool match_function(nrf_sortlist_item_t * p_item, char * item, uint8_t cu
             //sd_ble_gap_scan_stop();
             //nrf_delay_ms(5);
             //app_onoff_status_publish(&m_onoff_server_0);
-        //}
+        }
 
         return true;
     }
@@ -205,25 +205,6 @@ static bool search_function(nrf_sortlist_t const * p_list, char * item, uint8_t 
                                   //p_list->p_name, p_item, *pp_curr, p_item->p_next);
 }
 
-static void cal_time(nrf_sortlist_item_t * p_item, uint32_t time)
-{
-    sensor_node_s * p_item_0 = CONTAINER_OF(p_item, sensor_node_s, sensor_node);
-    uint32_t dif_time;
-    if(time >= p_item_0->last_active_time)
-    {
-        dif_time = time - p_item_0->last_active_time;
-    }
-    else
-    {
-        dif_time = p_item_0->last_active_time - time;
-    }
-    if((dif_time>TIME_THRES)&&(p_item_0->active == true))
-    {
-        p_item_0->active = false;
-        NRF_LOG_INFO("inactive node: %x%x%x%x%x%x",p_item_0->sensor_addr[0], p_item_0->sensor_addr[1], p_item_0->sensor_addr[2], p_item_0->sensor_addr[3], p_item_0->sensor_addr[4], p_item_0->sensor_addr[5]);
-    }
-}
-
 
 // *********************************************************************************
 
@@ -256,6 +237,32 @@ static ble_gap_conn_params_t const m_connection_param =
     (uint16_t)SUPERVISION_TIMEOUT
 };
 
+static void cal_time(nrf_sortlist_item_t * p_item, uint32_t time)
+{
+    sensor_node_s * p_item_0 = CONTAINER_OF(p_item, sensor_node_s, sensor_node);
+    uint32_t dif_time;
+    if(time >= p_item_0->last_active_time)
+    {
+        dif_time = time - p_item_0->last_active_time;
+    }
+    else
+    {
+        dif_time = p_item_0->last_active_time - time;
+    }
+    if((dif_time>TIME_THRES)&&(p_item_0->active == true))
+    {
+        p_item_0->active = false;
+        NRF_LOG_INFO("inactive node: %x%x%x%x%x%x",p_item_0->sensor_addr[0], p_item_0->sensor_addr[1], p_item_0->sensor_addr[2], p_item_0->sensor_addr[3], p_item_0->sensor_addr[4], p_item_0->sensor_addr[5]);
+        m_onoff_server_0.state.sensor_addr = *((uint32_t*)(&(p_item_0->sensor_addr[2])));
+        m_onoff_server_0.state.present_onoff = 0;
+        m_onoff_server_0.state.battery_level = 0xff;
+        (void) sd_ble_gap_scan_stop();
+
+        //NRF_LOG_INFO("Start scanning for device name %s.", (uint32_t)m_target_periph_name);
+        app_onoff_status_publish(&m_onoff_server_0);
+        sd_ble_gap_scan_start(&m_scan_params, &m_scan_buffer);
+    }
+}
 
 static void publish_timeout_handler(void* p_context) {
     ret_code_t ret;
@@ -481,6 +488,7 @@ static void on_adv_report(ble_gap_evt_adv_report_t const * p_adv_report)
             {
                 //nrf_delay_ms(5);
                 app_onoff_status_publish(&m_onoff_server_0);
+                publish_indicator = false;
             }
             //app_timer_start(m_start_scan_timer_id, START_SCAN_INTERVAL, NULL);
             //app_onoff_status_publish(&m_onoff_server_0);

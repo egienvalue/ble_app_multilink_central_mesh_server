@@ -93,6 +93,9 @@ static void app_onoff_server_set_cb(const app_onoff_server_t * p_server, bool on
     /* Resolve the server instance here if required, this example uses only 1 instance. */
 
     __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Setting GPIO value: %d\n", onoff)
+    // #TODO
+    // configure sensor node here
+    // Discover the database and set characteristics
 
     //hal_led_pin_set(ONOFF_SERVER_0_LED, onoff);
 }
