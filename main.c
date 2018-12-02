@@ -90,8 +90,8 @@
 #define LEDBUTTON_BUTTON          BSP_BUTTON_0                          /**< Button that will write to the LED characteristic of the peer. */
 #define BUTTON_DETECTION_DELAY    APP_TIMER_TICKS(50)                   /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
 
-#define SCAN_INTERVAL             0x00A0*2                               /**< Determines scan interval in units of 0.625 millisecond. */
-#define SCAN_WINDOW               0x0020*1                                /**< Determines scan window in units of 0.625 millisecond. */
+#define SCAN_INTERVAL             240                               /**< Determines scan interval in units of 0.625 millisecond. */
+#define SCAN_WINDOW               0x0050*1                                /**< Determines scan window in units of 0.625 millisecond. */
 #define SCAN_DURATION             0x0000                               /**< Duration of the scanning in units of 10 milliseconds. If set to 0x0000, scanning will continue until it is explicitly disabled. */
 
 #define MIN_CONNECTION_INTERVAL   MSEC_TO_UNITS(7.5, UNIT_1_25_MS)      /**< Determines minimum connection interval in milliseconds. */
@@ -99,8 +99,8 @@
 #define SLAVE_LATENCY             0                                     /**< Determines slave latency in terms of connection events. */
 #define SUPERVISION_TIMEOUT       MSEC_TO_UNITS(4000, UNIT_10_MS)       /**< Determines supervision time-out in units of 10 milliseconds. */
 #define CHECK_NODE_INTERVAL         APP_TIMER_TICKS(60000)
-#define START_SCAN_INTERVAL         APP_TIMER_TICKS(3000)
-#define TIME_THRES                  APP_TIMER_TICKS(100000)
+#define START_SCAN_INTERVAL         APP_TIMER_TICKS(1000)
+#define TIME_THRES                  APP_TIMER_TICKS(20000)
 
 
 NRF_BLE_GATT_DEF(m_gatt);                                               /**< GATT module instance. */
@@ -112,7 +112,7 @@ APP_TIMER_DEF(m_publish_timer_id);
 NRF_BLE_QWR_DEF(m_qwr);                                   /**< Check node timer. */
 extern app_onoff_server_t m_onoff_server_0;
 
-static char const m_target_periph_name[] = "Nordic_HRM";             /**< Name of the device we try to connect to. This name is searched for in the scan report data*/
+static char const m_target_periph_name[] = "SN";             /**< Name of the device we try to connect to. This name is searched for in the scan report data*/
 
 static uint8_t m_scan_buffer_data[BLE_GAP_SCAN_BUFFER_MIN]; /**< buffer where advertising reports will be stored by the SoftDevice. */
 
@@ -896,8 +896,8 @@ void scan_timer_start(void)
     ret_code_t err_code;
     err_code = app_timer_start(m_check_node_timer_id, CHECK_NODE_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
-    err_code = app_timer_start(m_start_scan_timer_id, START_SCAN_INTERVAL, NULL);
-    APP_ERROR_CHECK(err_code);
+    // err_code = app_timer_start(m_start_scan_timer_id, START_SCAN_INTERVAL, NULL);
+    // APP_ERROR_CHECK(err_code);
     // err_code = app_timer_start(m_publish_timer_id, APP_TIMER_TICKS(1000), NULL);
     // APP_ERROR_CHECK(err_code);
 }

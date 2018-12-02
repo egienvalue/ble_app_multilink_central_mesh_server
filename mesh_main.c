@@ -133,7 +133,7 @@ static void config_server_evt_cb(const config_server_evt_t * p_evt)
         node_reset();
     } else if (p_evt->type == CONFIG_SERVER_EVT_MODEL_SUBSCRIPTION_ADD) {
         __LOG(LOG_SRC_APP, LOG_LEVEL_INFO, "Finish config start scan\n");
-        //scan_start();
+        scan_start();
         scan_timer_start();
     }
 }
@@ -248,6 +248,7 @@ void mesh_main_start(void)
         };
         ERROR_CHECK(mesh_provisionee_prov_start(&prov_start_params));
     } else {
+        scan_start();
         scan_timer_start();
     }
 
