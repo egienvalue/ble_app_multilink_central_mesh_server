@@ -90,8 +90,8 @@
 #define LEDBUTTON_BUTTON          BSP_BUTTON_0                          /**< Button that will write to the LED characteristic of the peer. */
 #define BUTTON_DETECTION_DELAY    APP_TIMER_TICKS(50)                   /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
 
-#define SCAN_INTERVAL             240                               /**< Determines scan interval in units of 0.625 millisecond. */
-#define SCAN_WINDOW               0x0050*1                                /**< Determines scan window in units of 0.625 millisecond. */
+#define SCAN_INTERVAL             200                               /**< Determines scan interval in units of 0.625 millisecond. */
+#define SCAN_WINDOW               0x0030*1                                /**< Determines scan window in units of 0.625 millisecond. */
 #define SCAN_DURATION             0x0000                               /**< Duration of the scanning in units of 10 milliseconds. If set to 0x0000, scanning will continue until it is explicitly disabled. */
 
 #define MIN_CONNECTION_INTERVAL   MSEC_TO_UNITS(7.5, UNIT_1_25_MS)      /**< Determines minimum connection interval in milliseconds. */
@@ -100,7 +100,7 @@
 #define SUPERVISION_TIMEOUT       MSEC_TO_UNITS(4000, UNIT_10_MS)       /**< Determines supervision time-out in units of 10 milliseconds. */
 #define CHECK_NODE_INTERVAL         APP_TIMER_TICKS(60000)
 #define START_SCAN_INTERVAL         APP_TIMER_TICKS(1000)
-#define TIME_THRES                  APP_TIMER_TICKS(20000)
+#define TIME_THRES                  APP_TIMER_TICKS(200000)
 
 
 NRF_BLE_GATT_DEF(m_gatt);                                               /**< GATT module instance. */
@@ -437,7 +437,7 @@ static void on_adv_report(ble_gap_evt_adv_report_t const * p_adv_report)
 
         //app_onoff_status_publish(&m_onoff_server_0);
         
-        if(p_adv_report->rssi > -80)
+        if(p_adv_report->rssi > -88)
         {
             // for(int i=0; i<6; i++)
             // {
@@ -480,6 +480,7 @@ static void on_adv_report(ble_gap_evt_adv_report_t const * p_adv_report)
                 //nrf_sortlist_peek(&sensor_node_sortlist)
             } else {
                 NRF_LOG_INFO("Update Sensor : %x%x%x%x%x%x", addr_tmp[0], addr_tmp[1], addr_tmp[2], addr_tmp[3], addr_tmp[4], addr_tmp[5]);
+                //publish_indicator = true;
                 // //m_onoff_server_0.state.sensor_addr = *((uint32_t*)(&(addr_tmp[2])));
                 // nrf_delay_ms(5);
                 // app_onoff_status_publish(&m_onoff_server_0);
@@ -487,8 +488,14 @@ static void on_adv_report(ble_gap_evt_adv_report_t const * p_adv_report)
             if(publish_indicator == true)
             {
                 //nrf_delay_ms(5);
+                (void) sd_ble_gap_scan_stop();
                 app_onoff_status_publish(&m_onoff_server_0);
+                app_onoff_status_publish(&m_onoff_server_0);
+                err_code = sd_ble_gap_scan_start(&m_scan_params, &m_scan_buffer);
+                APP_ERROR_CHECK(err_code);
+
                 publish_indicator = false;
+                return;
             }
             //app_timer_start(m_start_scan_timer_id, START_SCAN_INTERVAL, NULL);
             //app_onoff_status_publish(&m_onoff_server_0);
@@ -894,8 +901,8 @@ void scan_timer_start(void)
 {
     // Start application timers.
     ret_code_t err_code;
-    err_code = app_timer_start(m_check_node_timer_id, CHECK_NODE_INTERVAL, NULL);
-    APP_ERROR_CHECK(err_code);
+    // err_code = app_timer_start(m_check_node_timer_id, CHECK_NODE_INTERVAL, NULL);
+    // APP_ERROR_CHECK(err_code);
     // err_code = app_timer_start(m_start_scan_timer_id, START_SCAN_INTERVAL, NULL);
     // APP_ERROR_CHECK(err_code);
     // err_code = app_timer_start(m_publish_timer_id, APP_TIMER_TICKS(1000), NULL);
